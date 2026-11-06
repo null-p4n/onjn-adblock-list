@@ -10,8 +10,10 @@ DNS blocklist built from the **ONJN** (Oficiul Național pentru Jocuri de Noroc)
 
 | File | Format |
 |---|---|
-| `onjn_adguard.txt` | AdGuard syntax (`\|\|domain^`), blocks the domain and all subdomains |
+| `onjn_blocklist.txt` | Blocklist syntax (`\|\|domain^`), blocks the domain and all subdomains |
 | `onjn_domains.txt` | Plain domain list, one per line |
+| `update.sh` | Updater for Linux/macOS (bash + curl) |
+| `update.ps1` | Updater for Windows (PowerShell 5.1 and 7+) |
 
 ## Usage
 
@@ -51,15 +53,39 @@ The ONJN list is broad. These entries are likely unwanted for personal use, so r
 
 ## Updating
 
-ONJN adds mirrors constantly. To regenerate from a fresh export of the official list:
+ONJN adds mirrors constantly. The updaters download the official `Lista-neagra.txt`, normalize it (lowercase, strips scheme, path, port and leading `www.`, dedupes, drops invalid names) and rewrite both list files.
 
 ```bash
-tr -d '\r' < Lista-neagra.txt | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr 'A-Z' 'a-z' \
-  | grep -E '^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$' | sort -u > onjn_domains.txt
-sed 's/.*/||&^/' onjn_domains.txt > onjn_adguard.txt
+./update.sh                    # Linux/macOS, needs curl
+DRY_RUN=1 ./update.sh          # show added/removed domains, write nothing
 ```
 
-Add AdGuard header lines (`! Title: ...`) at the top of `onjn_adguard.txt` if you want the list to show a name in the UI.
+```powershell
+.\update.ps1                   # Windows PowerShell 5.1 or PowerShell 7+
+.\update.ps1 -DryRun
+```
+
+Both scripts:
+
+- fetch over HTTPS only unless you opt in to plain http (`ALLOW_HTTP=1` / `-AllowHttp`)
+- refuse to overwrite the lists if fewer than 500 valid domains are parsed, or if the list shrinks by more than 50% (override with `FORCE=1` / `-Force`)
+- print the added and removed domains and leave the files untouched when nothing changed
+- accept a local copy of the list (`SRC_FILE=Lista-neagra.txt` / `-SourceFile`) for offline use or when the site blocks automated downloads
+- write via temp file and rename, so a failed run never leaves a half-written list
+
+Schedule it if you host the list yourself:
+
+```bash
+# crontab: weekly, Mondays 04:00
+0 4 * * 1  cd /path/to/repo && ./update.sh >> update.log 2>&1
+```
+
+```powershell
+# Task Scheduler: weekly
+$a = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -File C:\path\to\repo\update.ps1'
+$t = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At 4am
+Register-ScheduledTask -TaskName 'ONJN list update' -Action $a -Trigger $t
+```
 
 ## License
 
