@@ -4,7 +4,7 @@ DNS blocklist built from the **ONJN** (Oficiul Național pentru Jocuri de Noroc)
 
 - **Snapshot date:** 2026-11-06
 - **Entries:** 2,920 unique domains
-- **Source:** ONJN blacklist, published at [onjn.gov.ro](https://www.onjn.gov.ro). This repo is a reformatted snapshot, not an official mirror.
+- **Source:** ONJN blacklist, published at [onjn.gov.ro](https://onjn.gov.ro). This repo is a reformatted snapshot, not an official mirror.
 
 ## Files
 
